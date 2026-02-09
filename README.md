@@ -1,80 +1,126 @@
-# 🛰️ Small Object Detection Web App
-### Flutter Web + YOLOv8 (Baseline & Enhanced)
+# 🛰️ VisGrad-YOLO  
+## Small Object Detection Web Application (Flutter + YOLOv8)
 
-A **Flutter Web application** for detecting **small objects in images and videos** using:
+A **Flutter Web–based object detection system** designed specifically for **small-object detection** using:
 
 - 🔹 Baseline YOLOv8
-- 🔹 Enhanced YOLOv8 
+- 🔹 Enhanced VisGrad-YOLO (Backbone + Neck + Head Improvements)
 
-This project focuses on improving **small-object detection accuracy** by enhancing the YOLOv8 architecture.
+The application provides an interactive web interface where users can upload **images or videos**, run detection, and visualize predictions with bounding boxes.
 
-✅ Frontend (UI + Workflow) Completed  
-🚧 Backend (Model Inference API) In Progress  
-
----
-
-## 📌 Project Motivation
-
-Small objects are difficult to detect because:
-
-- Very few pixels
-- Scale variation
-- Background noise
-- Feature loss in deep layers
-
-Traditional YOLO models often miss these objects.
-
-To overcome this, we implemented:
-
-👉 Enhanced Neck Architecture  
-👉 Better Feature Fusion  
-👉 Multi-scale Detection Improvements  
+✅ Frontend/UI Completed  
+🚧 Backend Model Inference Integration In Progress  
 
 ---
 
-## 🚀 Features
+# 📖 About the Project
 
-✅ Flutter Web responsive interface  
-✅ Image detection screen  
-✅ Video detection screen  
-✅ Baseline vs Enhanced mode selection  
-✅ Detection results preview  
-✅ Modular screen-based routing  
-✅ Clean and minimal UI  
+Small-object detection is critical for modern surveillance, traffic monitoring, and remote sensing applications. However, detecting tiny targets remains challenging due to:
+
+- low resolution  
+- cluttered backgrounds  
+- feature loss in deeper layers  
+- significant scale variations  
+
+Conventional object detectors often fail to capture fine-grained details, resulting in missed detections and poor recall.
+
+To address these limitations, we propose **VisGrad-YOLO**, an enhanced and explainable detection framework built upon the **YOLOv8 architecture**. The system introduces improvements across the **backbone, neck, detection head, post-processing, and optimization stages** to strengthen feature representation while maintaining real-time performance.
 
 ---
 
-## 🧠 Application Workflow
+# 🔬 Key Architectural Enhancements
+
+## 🔹 Backbone – C2f-CloAtt
+- Replaces standard YOLOv8 backbone blocks  
+- Combines **C2f (Cross-Stage Feature Fusion)** with **CloAtt (Closed Attention)**  
+- Preserves low-level spatial information  
+- Improves fine-grained feature extraction  
+- Enhances tiny object visibility  
+
+## 🔹 Neck – AGBiFPN + SOCS
+- **AGBiFPN** for adaptive bidirectional multi-scale fusion  
+- **SOCS modules** for contextual refinement  
+- Strengthens shallow–deep feature interaction  
+- Improves small-object representation  
+
+## 🔹 Post-Processing
+- Small-object-aware confidence boosting  
+- Gentler Non-Maximum Suppression (NMS)  
+- Prevents removal of closely packed objects  
+
+## 🔹 Optimization Strategy
+- Advanced IoU losses (RIoU & SIoU)  
+- Scale-balanced label assignment  
+
+---
+
+### 🚀 Result
+
+These combined improvements significantly increase:
+
+- Recall  
+- mAP  
+- Localization precision  
+
+especially for **tiny and distant objects**, compared to baseline YOLOv8.
+
+---
+
+# 🔍 Explainability
+
+To improve model transparency, the system integrates:
+
+- Grad-CAM attention heatmaps  
+- Detection-aware visualization  
+
+These highlight regions influencing predictions, making the detector more **interpretable and trustworthy**.
+
+---
+
+# 🌐 Web Application Features
+
+✅ Flutter Web responsive UI  
+✅ Image detection mode  
+✅ Video detection mode  
+✅ Baseline vs Enhanced model selection  
+✅ Detection results visualization  
+✅ Modular routing architecture  
+✅ Real-time preview workflow  
+
+---
+
+# 🧠 System Workflow
 
 ```
 
-Intro Screen
+User Upload (Image/Video)
 ↓
-Mode Selection (Image / Video)
+Backend API (Planned)
 ↓
-Upload Media
+YOLOv8 / VisGrad-YOLO Inference
 ↓
-YOLOv8 Inference (Backend - Planned)
+Bounding Boxes + Labels
 ↓
-Detection Results with Bounding Boxes
+Results Displayed in Web UI
 
 ```
 
 ---
 
-## 🛠️ Tech Stack
+# 🛠️ Tech Stack
 
 | Layer | Technology |
 |-----------|-------------|
 | Frontend | Flutter Web |
 | Model | YOLOv8 |
-| Enhancements | AGBiFPN + SOCS |
+| Enhancements | C2f-CloAtt + AGBiFPN + SOCS |
 | Backend (Planned) | FastAPI / Flask |
 | Image Processing | OpenCV |
+| Visualization | Grad-CAM |
 
 ---
 
-## 📂 Project Structure
+# 📂 Project Structure
 
 ```
 
@@ -89,66 +135,77 @@ lib/
 ┗ main.dart
 
 assets/
-┗ images / screenshots
+┗ screenshots/
 
 android/
 test/
-README.md
 pubspec.yaml
+README.md
 
 ````
 
 ---
 
-## 📸 Screenshots
+# 📸 Website Screenshots
 
-> Add your images inside: `assets/screenshots/`
+<table>
+<tr>
+<td width="50%">
 
-### Home / Intro
-<img src="assets/screenshots/intro.png" width="45%"/>
+### 🏠 Intro Page
+<img src="assets/screenshots/intro.jpeg"/>
 
-### Mode Selection
-<img src="assets/screenshots/mode.png" width="45%"/>
+</td>
+<td width="50%">
 
-### Image Detection
-<img src="assets/screenshots/image.png" width="45%"/>
+### ⚙️ Mode Selection
+<img src="assets/screenshots/mode.jpeg"/>
 
-### Results Screen
-<img src="assets/screenshots/result.png" width="45%"/>
+</td>
+</tr>
+
+<tr>
+<td width="50%">
+
+### 🖼️ Image Detection
+<img src="assets/screenshots/image.jpeg"/>
+
+</td>
+<td width="50%">
+
+### 🎥 Video Detection
+<img src="assets/screenshots/video.png"/>
+
+</td>
+</tr>
+
+<tr>
+<td colspan="2">
+
+### 📊 Results Screen
+<img src="assets/screenshots/result.jpeg"/>
+
+</td>
+</tr>
+</table>
 
 ---
 
-## 🔬 Detection Models
+# ⚙️ Installation
 
-### 🔹 Baseline
-Standard YOLOv8 model
-
-### 🔹 Enhanced (Our Work)
-- AGBiFPN Neck
-- SOCS Feature Fusion
-- Improved small-object representation
-- Better multi-scale learning
-
-These improvements help detect **tiny and distant objects more accurately**.
-
----
-
-## ⚙️ Installation
-
-### 1️⃣ Clone Repository
-
+## 1. Clone Repository
 ```bash
-git clone https://github.com/your-username/your-repo-name.git
+git clone https://github.com/vigu2019/mainproj.git
 cd your-repo-name
 ````
 
-### 2️⃣ Install Packages
+## 2. Install Dependencies
 
 ```bash
 flutter pub get
 ```
 
-### 3️⃣ Run Web App
+## 3. Run Web App
 
 ```bash
 flutter run -d chrome
@@ -156,47 +213,49 @@ flutter run -d chrome
 
 ---
 
-## 📈 Current Status
+# 📈 Current Status
 
-| Module             | Status     |
-| ------------------ | ---------- |
-| UI/Frontend        | ✅ Done     |
-| Navigation/Routing | ✅ Done     |
-| Image Upload       | ✅ Done     |
-| Video Upload       | ✅ Done     |
-| Detection UI       | ✅ Done     |
-| Backend API        | 🚧 Pending |
-| Model Deployment   | 🚧 Pending |
+| Module                  | Status      |
+| ----------------------- | ----------- |
+| UI/Frontend             | ✅ Completed |
+| Routing                 | ✅ Completed |
+| Image Upload            | ✅ Completed |
+| Detection Visualization | ✅ Completed |
+| Video Upload            | 🚧 Completed |
+| Backend API             | 🚧 Pending  |
+| Model Deployment        | 🚧 Pending  |
 
 ---
 
-## 🎯 Future Work
+# 🎯 Future Work
 
 * Backend inference API integration
-* Real-time detection
-* Video streaming support
-* Performance metrics dashboard
+* Real-time video streaming
 * Cloud deployment
-* Authentication system
+* Performance analytics dashboard
+* Authentication & alerts
+* Mobile version
 
 ---
 
-## 👩‍💻 Team Contributions
+# 👩‍💻 Team Contributions
 
-* Flutter UI Development
-* Screen-based routing
-* YOLOv8 baseline testing
-* Enhanced neck architecture design
-* Dataset preparation & evaluation
-
----
-
-## 📜 License
-
-For academic and research use only.
+* Flutter Web UI Development
+* YOLOv8 Baseline Implementation
+* C2f-CloAtt Backbone Design
+* AGBiFPN + SOCS Neck Integration
+* Small-object–aware Post-processing head 
+* Loss Function Optimization
+* Visualization & Evaluation
 
 ---
 
-## ⭐ Acknowledgement
+# 📜 License
 
-Built using Flutter and YOLOv8 with custom enhancements for small object detection.
+Developed for academic and research purposes.
+
+---
+
+# ⭐ Acknowledgement
+
+Built upon the YOLOv8 framework and extended with custom architectural improvements for robust small-object detection.

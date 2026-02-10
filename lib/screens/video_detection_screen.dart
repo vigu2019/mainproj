@@ -1,8 +1,12 @@
+import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:go_router/go_router.dart';
+import 'package:http/http.dart' as http;
+
 
 class VideoDetectionScreen extends StatefulWidget {
   const VideoDetectionScreen({super.key});
@@ -14,10 +18,13 @@ class VideoDetectionScreen extends StatefulWidget {
 class _VideoDetectionScreenState extends State<VideoDetectionScreen> {
   File? _selectedVideo;
   Uint8List? _videoBytes;
+
   String _selectedModel = 'Enhanced';
+  bool _isLoading = false;
 
   bool get hasVideo => _selectedVideo != null || _videoBytes != null;
 
+  // ---------------- PICK VIDEO ----------------
   Future<void> _pickVideo() async {
     final result = await FilePicker.platform.pickFiles(
       type: FileType.video,
@@ -40,12 +47,59 @@ class _VideoDetectionScreenState extends State<VideoDetectionScreen> {
     }
   }
 
+  // ---------------- RUN ANALYSIS ----------------
+  Future<void> _runVideoAnalysis() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    final uri = Uri.parse('http://127.0.0.1:8000/predict/video');
+    final request = http.MultipartRequest('POST', uri);
+
+    request.fields['model_type'] = _selectedModel.toLowerCase();
+
+    if (_videoBytes != null) {
+      request.files.add(
+        http.MultipartFile.fromBytes(
+          'file',
+          _videoBytes!,
+          filename: 'video.mp4',
+        ),
+      );
+    } else if (_selectedVideo != null) {
+      request.files.add(
+        await http.MultipartFile.fromPath(
+          'file',
+          _selectedVideo!.path,
+        ),
+      );
+    }
+
+    final response = await request.send();
+    final responseBody = await response.stream.bytesToString();
+    final result = jsonDecode(responseBody);
+
+    setState(() {
+      _isLoading = false;
+    });
+
+    if (!mounted) return;
+
+    final videoPath = result['video_path'];
+
+    // ✅ WEB SAFE NAVIGATION
+    context.go(
+      '/video-result?path=${Uri.encodeComponent(videoPath)}',
+    );
+  }
+
+  // ---------------- VIDEO PREVIEW ----------------
   Widget _videoPreview() {
     if (!hasVideo) {
       return Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: const [
-          Icon(Icons.videocam_outlined, size: 56, color: Colors.black54),
+          Icon(Icons.videocam_outlined, size: 64, color: Colors.black54),
           SizedBox(height: 12),
           Text(
             'Click to upload video',
@@ -58,7 +112,7 @@ class _VideoDetectionScreenState extends State<VideoDetectionScreen> {
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        const Icon(Icons.check_circle, size: 48, color: Colors.green),
+        const Icon(Icons.check_circle, size: 56, color: Colors.green),
         const SizedBox(height: 12),
         const Text(
           'Video selected',
@@ -76,6 +130,7 @@ class _VideoDetectionScreenState extends State<VideoDetectionScreen> {
     );
   }
 
+  // ---------------- UI ----------------
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -108,7 +163,9 @@ class _VideoDetectionScreenState extends State<VideoDetectionScreen> {
                     color: Colors.white,
                   ),
                 ),
+
                 const SizedBox(height: 6),
+
                 const Text(
                   'Upload a video to analyze small object density',
                   style: TextStyle(fontSize: 14, color: Colors.white70),
@@ -116,46 +173,32 @@ class _VideoDetectionScreenState extends State<VideoDetectionScreen> {
 
                 const SizedBox(height: 28),
 
-                Expanded(
-                  child: Row(
-                    children: [
-                      Expanded(
-                        flex: 3,
-                        child: InkWell(
-                          onTap: _pickVideo,
-                          borderRadius: BorderRadius.circular(24),
-                          child: Container(
-                            padding: const EdgeInsets.all(16),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(24),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withOpacity(0.1),
-                                  blurRadius: 18,
-                                  offset: const Offset(0, 10),
-                                ),
-                              ],
-                            ),
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(16),
-                              child: _videoPreview(),
-                            ),
+                // ✅ FULL WIDTH VIDEO CARD
+                SizedBox(
+                  width: double.infinity,
+                  height: 320,
+                  child: InkWell(
+                    onTap: _pickVideo,
+                    borderRadius: BorderRadius.circular(24),
+                    child: Container(
+                      padding: const EdgeInsets.all(24),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(24),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.1),
+                            blurRadius: 18,
+                            offset: const Offset(0, 10),
                           ),
-                        ),
+                        ],
                       ),
-
-                      const SizedBox(width: 24),
-
-                      Expanded(
-                        flex: 1,
-                        child: _contextPanel(),
-                      ),
-                    ],
+                      child: Center(child: _videoPreview()),
+                    ),
                   ),
                 ),
 
-                const SizedBox(height: 20),
+                const SizedBox(height: 24),
 
                 const Text(
                   'Select Model',
@@ -165,7 +208,9 @@ class _VideoDetectionScreenState extends State<VideoDetectionScreen> {
                     color: Colors.white,
                   ),
                 ),
+
                 const SizedBox(height: 10),
+
                 Row(
                   children: [
                     _modelChip('Baseline'),
@@ -174,7 +219,7 @@ class _VideoDetectionScreenState extends State<VideoDetectionScreen> {
                   ],
                 ),
 
-                const SizedBox(height: 16),
+                const SizedBox(height: 24),
 
                 SizedBox(
                   width: double.infinity,
@@ -187,15 +232,21 @@ class _VideoDetectionScreenState extends State<VideoDetectionScreen> {
                         borderRadius: BorderRadius.circular(30),
                       ),
                     ),
-                    onPressed: hasVideo
-                        ? () {
-                        context.go('/run', extra: 'Video');
-                    }
+                    onPressed: hasVideo && !_isLoading
+                        ? _runVideoAnalysis
                         : null,
-                    child: const Text(
+                    child: _isLoading
+                        ? const SizedBox(
+                      height: 20,
+                      width: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                        : const Text(
                       'Run Analysis',
-                      style:
-                      TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
                 ),
@@ -214,64 +265,7 @@ class _VideoDetectionScreenState extends State<VideoDetectionScreen> {
     );
   }
 
-  Widget _contextPanel() {
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.15),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Analysis Context',
-            style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: Colors.white),
-          ),
-          const SizedBox(height: 16),
-          _contextRow('Model', _selectedModel),
-          _contextRow('Dataset', 'VisDrone'),
-          _contextRow('Input', 'Video'),
-          _contextRow(
-            'Status',
-            hasVideo ? 'Ready for inference' : 'Waiting for input',
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _contextRow(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
-      child: Row(
-        children: [
-          SizedBox(
-            width: 70,
-            child: Text(
-              label,
-              style:
-              const TextStyle(fontSize: 13, color: Colors.white70),
-            ),
-          ),
-          Expanded(
-            child: Text(
-              value,
-              style: const TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
+  // ---------------- MODEL CHIP ----------------
   Widget _modelChip(String model) {
     final bool isSelected = _selectedModel == model;
 

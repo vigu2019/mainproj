@@ -41,12 +41,11 @@ class ResultScreen extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Header
                 Row(
                   children: [
                     IconButton(
                       icon: const Icon(Icons.arrow_back, color: Colors.white),
-                      onPressed: () => context.pop(),
+                      onPressed: () => context.go('/image'),
                     ),
                     const SizedBox(width: 8),
                     const Text(

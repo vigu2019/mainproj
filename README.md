@@ -114,7 +114,7 @@ Results Displayed in Web UI
 | Frontend | Flutter Web |
 | Model | YOLOv8 |
 | Enhancements | C2f-CloAtt + AGBiFPN + SOCS |
-| Backend (Planned) | FastAPI / Flask |
+| Backend (Planned) | FastAPI and Python |
 | Image Processing | OpenCV |
 | Visualization | Grad-CAM |
 

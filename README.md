@@ -9,7 +9,7 @@ A **Flutter Web–based object detection system** designed specifically for **sm
 The application provides an interactive web interface where users can upload **images or videos**, run detection, and visualize predictions with bounding boxes.
 
 ✅ Frontend/UI Completed  
-🚧 Backend Model Inference Integration In Progress  
+✅ Backend Model Inference Integration In Progress  
 
 ---
 
@@ -221,8 +221,8 @@ flutter run -d chrome
 | Routing                 | ✅ Completed |
 | Image Upload            | ✅ Completed |
 | Detection Visualization | ✅ Completed |
-| Video Upload            | 🚧 Completed |
-| Backend API             | 🚧 Pending  |
+| Video Upload            | ✅ Completed |
+| Backend API             | ✅ Pending  |
 | Model Deployment        | 🚧 Pending  |
 
 ---

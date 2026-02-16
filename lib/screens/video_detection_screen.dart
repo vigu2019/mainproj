@@ -139,9 +139,18 @@ class _VideoDetectionScreenState extends State<VideoDetectionScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                IconButton(
-                  icon: const Icon(Icons.arrow_back, color: Colors.white),
-                  onPressed: () => context.pop(),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.arrow_back, color: Colors.white),
+                      onPressed: () => context.pop(),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.home, color: Colors.white),
+                      onPressed: () => context.go('/mode'),
+                    ),
+                  ],
                 ),
 
                 const SizedBox(height: 12),

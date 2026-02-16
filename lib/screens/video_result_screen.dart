@@ -79,19 +79,28 @@ class _VideoResultScreenState extends State<VideoResultScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    IconButton(
-                      icon: const Icon(Icons.arrow_back, color: Colors.white),
-                      onPressed: () => context.go('/video'),
+                    Row(
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.arrow_back, color: Colors.white),
+                          onPressed: () => context.pop(),
+                        ),
+                        const SizedBox(width: 8),
+                        const Text(
+                          'Video Result',
+                          style: TextStyle(
+                            fontSize: 26,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(width: 8),
-                    const Text(
-                      'Video Result',
-                      style: TextStyle(
-                        fontSize: 26,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
+                    IconButton(
+                      icon: const Icon(Icons.home, color: Colors.white),
+                      onPressed: () => context.go('/mode'),
                     ),
                   ],
                 ),
@@ -183,7 +192,6 @@ class _VideoResultScreenState extends State<VideoResultScreen> {
       ),
       child: Column(
         children: [
-          // Progress bar
           VideoProgressIndicator(
             _controller,
             allowScrubbing: true,
@@ -196,11 +204,9 @@ class _VideoResultScreenState extends State<VideoResultScreen> {
 
           const SizedBox(height: 12),
 
-          // Play/Pause and time
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              // Play/Pause button
               IconButton(
                 icon: Icon(
                   _controller.value.isPlaying
@@ -220,7 +226,6 @@ class _VideoResultScreenState extends State<VideoResultScreen> {
                 },
               ),
 
-              // Time display
               ValueListenableBuilder(
                 valueListenable: _controller,
                 builder: (context, VideoPlayerValue value, child) {
@@ -237,7 +242,6 @@ class _VideoResultScreenState extends State<VideoResultScreen> {
                 },
               ),
 
-              // Replay button
               IconButton(
                 icon: const Icon(
                   Icons.replay,

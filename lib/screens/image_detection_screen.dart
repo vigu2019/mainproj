@@ -97,13 +97,26 @@ class _ImageUploadScreenState extends State<ImageUploadScreen> {
             padding: const EdgeInsets.all(24),
             child: Column(
               children: [
-                const Text(
-                  'Upload Image',
-                  style: TextStyle(
-                    fontSize: 30,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.arrow_back, color: Colors.white),
+                      onPressed: () => context.pop(),
+                    ),
+                    const Text(
+                      'Upload Image',
+                      style: TextStyle(
+                        fontSize: 30,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.home, color: Colors.white),
+                      onPressed: () => context.go('/mode'),
+                    ),
+                  ],
                 ),
 
                 const SizedBox(height: 24),

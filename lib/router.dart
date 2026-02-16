@@ -4,6 +4,7 @@ import 'screens/mode_selection_screen.dart';
 import 'screens/image_detection_screen.dart';
 import 'screens/video_detection_screen.dart';
 import 'screens/result_screen.dart';
+import 'screens/video_result_screen.dart';
 
 final GoRouter appRouter = GoRouter(
   initialLocation: '/',
@@ -27,6 +28,13 @@ final GoRouter appRouter = GoRouter(
     GoRoute(
       path: '/result',
       builder: (context, state) => const ResultScreen(),
+    ),
+    GoRoute(
+      path: '/video-result',
+      builder: (context, state) {
+        final videoUrl = state.uri.queryParameters['url'] ?? '';
+        return VideoResultScreen(videoUrl: videoUrl);
+      },
     ),
   ],
 );

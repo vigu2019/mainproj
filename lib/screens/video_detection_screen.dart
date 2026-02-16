@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
-
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:go_router/go_router.dart';
@@ -24,7 +23,6 @@ class _VideoDetectionScreenState extends State<VideoDetectionScreen> {
 
   bool get hasVideo => _selectedVideo != null || _videoBytes != null;
 
-  // ---------------- PICK VIDEO ----------------
   Future<void> _pickVideo() async {
     final result = await FilePicker.platform.pickFiles(
       type: FileType.video,
@@ -47,7 +45,6 @@ class _VideoDetectionScreenState extends State<VideoDetectionScreen> {
     }
   }
 
-  // ---------------- RUN ANALYSIS ----------------
   Future<void> _runVideoAnalysis() async {
     setState(() {
       _isLoading = true;
@@ -82,18 +79,13 @@ class _VideoDetectionScreenState extends State<VideoDetectionScreen> {
     setState(() {
       _isLoading = false;
     });
-
     if (!mounted) return;
-
-    final videoPath = result['video_path'];
-
-    // ✅ WEB SAFE NAVIGATION
+    final videoUrl = result['video_url'];
     context.go(
-      '/video-result?path=${Uri.encodeComponent(videoPath)}',
+      '/video-result?url=${Uri.encodeComponent(videoUrl)}',
     );
   }
 
-  // ---------------- VIDEO PREVIEW ----------------
   Widget _videoPreview() {
     if (!hasVideo) {
       return Column(
@@ -130,7 +122,6 @@ class _VideoDetectionScreenState extends State<VideoDetectionScreen> {
     );
   }
 
-  // ---------------- UI ----------------
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -173,7 +164,6 @@ class _VideoDetectionScreenState extends State<VideoDetectionScreen> {
 
                 const SizedBox(height: 28),
 
-                // ✅ FULL WIDTH VIDEO CARD
                 SizedBox(
                   width: double.infinity,
                   height: 320,
@@ -265,7 +255,6 @@ class _VideoDetectionScreenState extends State<VideoDetectionScreen> {
     );
   }
 
-  // ---------------- MODEL CHIP ----------------
   Widget _modelChip(String model) {
     final bool isSelected = _selectedModel == model;
 

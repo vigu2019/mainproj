@@ -1,40 +1,61 @@
+import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'screens/landing_screen.dart';
 import 'screens/intro_screen.dart';
-import 'screens/mode_selection_screen.dart';
 import 'screens/image_detection_screen.dart';
 import 'screens/video_detection_screen.dart';
 import 'screens/result_screen.dart';
 import 'screens/video_result_screen.dart';
+import 'widgets/dashboard_layout.dart';
+
+final rootNavigatorKey = GlobalKey<NavigatorState>();
+final shellNavigatorKey = GlobalKey<NavigatorState>();
 
 final GoRouter appRouter = GoRouter(
-  initialLocation: '/',
+  navigatorKey: rootNavigatorKey,
+  initialLocation: '/intro',
   routes: [
     GoRoute(
-      path: '/',
-      builder: (context, state) => const IntroScreen(),
+      path: '/intro',
+      builder: (context, state) => const LandingScreen(),
     ),
-    GoRoute(
-      path: '/mode',
-      builder: (context, state) => const ModeSelectionScreen(),
-    ),
-    GoRoute(
-      path: '/image',
-      builder: (context, state) => const ImageUploadScreen(),
-    ),
-    GoRoute(
-      path: '/video',
-      builder: (context, state) => const VideoDetectionScreen(),
-    ),
-    GoRoute(
-      path: '/result',
-      builder: (context, state) => const ResultScreen(),
-    ),
-    GoRoute(
-      path: '/video-result',
-      builder: (context, state) {
-        final videoUrl = state.uri.queryParameters['url'] ?? '';
-        return VideoResultScreen(videoUrl: videoUrl);
+    ShellRoute(
+      navigatorKey: shellNavigatorKey,
+      builder: (context, state, child) {
+        return DashboardLayout(child: child);
       },
+      routes: [
+        GoRoute(
+          path: '/',
+          parentNavigatorKey: shellNavigatorKey,
+          builder: (context, state) => const IntroScreen(), // Renamed internally to Home
+        ),
+        GoRoute(
+          path: '/image',
+          parentNavigatorKey: shellNavigatorKey,
+          builder: (context, state) => const ImageUploadScreen(),
+        ),
+        GoRoute(
+          path: '/video',
+          parentNavigatorKey: shellNavigatorKey,
+          builder: (context, state) => const VideoDetectionScreen(),
+        ),
+        GoRoute(
+          path: '/result',
+          parentNavigatorKey: shellNavigatorKey,
+          builder: (context, state) => const ResultScreen(),
+        ),
+        GoRoute(
+          path: '/video-result',
+          parentNavigatorKey: shellNavigatorKey,
+          builder: (context, state) {
+            final extra = state.extra as Map<String, dynamic>? ?? {};
+            final videoUrl = extra['video_url'] ?? '';
+            final events = extra['events'] as List<dynamic>? ?? [];
+            return VideoResultScreen(videoUrl: videoUrl, events: events);
+          },
+        ),
+      ],
     ),
   ],
 );

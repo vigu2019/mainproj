@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
+import '../utils/media_saver.dart';
 
 class ResultScreen extends StatelessWidget {
   const ResultScreen({super.key});
@@ -10,152 +12,94 @@ class ResultScreen extends StatelessWidget {
 
     if (extra == null || extra is! Map<String, dynamic>) {
       return const Scaffold(
-        body: Center(child: Text('No result data found')),
+        backgroundColor: Color(0xFFF1F5F9), // Slate 100
+        body: Center(
+          child: Text('Error: Expected map data, but got null or invalid format.', style: TextStyle(color: Color(0xFF0F172A))),
+        ),
       );
     }
 
     final String imageUrl = extra['image_url'];
-    final Map<String, dynamic> counts =
-    extra['counts'] as Map<String, dynamic>;
+    final Map<String, dynamic> counts = extra['counts'] as Map<String, dynamic>;
 
-    final int total = counts.values.fold<int>(
-      0,
-          (sum, v) => sum + (v as int),
-    );
+    final int total = counts.values.fold<int>(0, (sum, v) => sum + (v as int));
 
     return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              Color(0xFFFB8C00),
-              Color(0xFF7DA2FF),
-            ],
-          ),
-        ),
-        child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+      backgroundColor: const Color(0xFFF1F5F9),
+      body: Padding(
+        padding: const EdgeInsets.all(40),
+        child: Column(
+          children: [
+            // Header
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Row(
-                      children: [
-                        IconButton(
-                          icon: const Icon(Icons.arrow_back, color: Colors.white),
-                          onPressed: () => context.pop(),
+                    GestureDetector(
+                      onTap: () => context.pop(),
+                      child: Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: const Color(0xFFE2E8F0)),
                         ),
-                        const SizedBox(width: 8),
+                        child: const Icon(Icons.arrow_back_rounded, color: Color(0xFF64748B), size: 20),
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
                         const Text(
-                          'Result',
+                          'Analysis Report',
                           style: TextStyle(
-                            fontSize: 26,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
+                            fontFamily: 'Inter',
+                            fontSize: 24,
+                            fontWeight: FontWeight.w700,
+                            color: Color(0xFF0F172A),
+                            letterSpacing: -0.5,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Generated on ${DateFormat('MMM d, yyyy - h:mm a').format(DateTime.now())}',
+                          style: const TextStyle(
+                            fontFamily: 'Inter',
+                            fontSize: 14,
+                            color: Color(0xFF64748B),
                           ),
                         ),
                       ],
                     ),
-                    IconButton(
-                      icon: const Icon(Icons.home, color: Colors.white),
-                      onPressed: () => context.go('/mode'),
-                    ),
                   ],
                 ),
-
-                const SizedBox(height: 20),
-
-                Expanded(
+                
+                // Download Image Button
+                GestureDetector(
+                  onTap: () => MediaSaver.downloadAndSaveImage(context, imageUrl),
                   child: Container(
-                    padding: const EdgeInsets.all(16),
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                     decoration: BoxDecoration(
                       color: Colors.white,
-                      borderRadius: BorderRadius.circular(24),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: const Color(0xFFE2E8F0)),
+                      boxShadow: [
+                        BoxShadow(color: const Color(0xFF94A3B8).withOpacity(0.05), blurRadius: 4, offset: const Offset(0, 2)),
+                      ],
                     ),
                     child: Row(
                       children: [
-                        Expanded(
-                          flex: 3,
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(16),
-                            child: Image.network(
-                              imageUrl,
-                              fit: BoxFit.contain,
-                            ),
-                          ),
-                        ),
-
-                        const SizedBox(width: 20),
-
-                        Container(
-                          width: 220,
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: Colors.grey.shade100,
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text(
-                                'Detected Objects',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-
-                              const SizedBox(height: 12),
-
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 10,
-                                  horizontal: 12,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFF7DA2FF)
-                                      .withOpacity(0.15),
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: Text(
-                                  'Total: $total',
-                                  style: const TextStyle(
-                                    fontSize: 15,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ),
-
-                              const SizedBox(height: 16),
-
-                              ...counts.entries.map(
-                                    (e) => Padding(
-                                  padding:
-                                  const EdgeInsets.symmetric(vertical: 6),
-                                  child: Row(
-                                    mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Text(
-                                        e.key,
-                                        style: const TextStyle(fontSize: 14),
-                                      ),
-                                      Text(
-                                        e.value.toString(),
-                                        style: const TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ],
+                        const Icon(Icons.download_rounded, color: Color(0xFF3B82F6), size: 18),
+                        const SizedBox(width: 8),
+                        const Text(
+                          'Download Image',
+                          style: TextStyle(
+                            fontFamily: 'Inter',
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF3B82F6),
                           ),
                         ),
                       ],
@@ -164,9 +108,214 @@ class ResultScreen extends StatelessWidget {
                 ),
               ],
             ),
-          ),
+
+            const SizedBox(height: 32),
+
+            // Main Desktop Layout (Horizontal Split)
+            Expanded(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Left Panel: Processed Image (70%)
+                  Expanded(
+                    flex: 7,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: const Color(0xFFE2E8F0)),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFF94A3B8).withOpacity(0.05),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(18),
+                        child: Image.network(
+                          imageUrl,
+                          fit: BoxFit.contain, // Maintain aspect ratio within large box
+                          loadingBuilder: (context, child, p) {
+                            if (p == null) return child;
+                            return const Center(
+                              child: CircularProgressIndicator(color: Color(0xFF3B82F6), strokeWidth: 2),
+                            );
+                          },
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(width: 32),
+
+                  // Right Panel: Data Analytics (30%)
+                  Expanded(
+                    flex: 3,
+                    child: Container(
+                      padding: const EdgeInsets.all(28),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: const Color(0xFFE2E8F0)),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFF94A3B8).withOpacity(0.05),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          const Text(
+                            'Object Metrics',
+                            style: TextStyle(
+                              fontFamily: 'Inter',
+                              fontSize: 18,
+                              fontWeight: FontWeight.w700,
+                              color: Color(0xFF0F172A),
+                            ),
+                          ),
+                          const SizedBox(height: 24),
+
+                          // Total Overview Card
+                          Container(
+                            padding: const EdgeInsets.all(20),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFEFF6FF), // Blue 50
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(color: const Color(0xFFBFDBFE)), // Blue 200
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                const Text(
+                                  'Total Detections',
+                                  style: TextStyle(
+                                    fontFamily: 'Inter',
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                    color: Color(0xFF1E3A8A), // Blue 900
+                                  ),
+                                ),
+                                Text(
+                                  total.toString(),
+                                  style: const TextStyle(
+                                    fontFamily: 'Inter',
+                                    fontSize: 24,
+                                    fontWeight: FontWeight.w800,
+                                    color: Color(0xFF1D4ED8), // Blue 700
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+
+                          const SizedBox(height: 32),
+
+                          const Text(
+                            'Breakdown',
+                            style: TextStyle(
+                              fontFamily: 'Inter',
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xFF64748B),
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+
+                          // Detailed List
+                          Expanded(
+                            child: counts.isEmpty
+                                ? const Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Icon(
+                                        Icons.search_off_rounded,
+                                        size: 48,
+                                        color: Color(0xFFCBD5E1),
+                                      ),
+                                      SizedBox(height: 16),
+                                      Text(
+                                        'No detections found.',
+                                        style: TextStyle(
+                                          fontFamily: 'Inter',
+                                          fontSize: 15,
+                                          fontWeight: FontWeight.w500,
+                                          color: Color(0xFF64748B),
+                                        ),
+                                      ),
+                                    ],
+                                  )
+                                : ListView.separated(
+                                    itemCount: counts.length,
+                                    separatorBuilder: (_, __) => const Divider(height: 1, color: Color(0xFFF1F5F9)),
+                                    itemBuilder: (context, index) {
+                                      final entry = counts.entries.elementAt(index);
+                                      final color = _getColorForIndex(index);
+
+                                      return Padding(
+                                        padding: const EdgeInsets.symmetric(vertical: 16),
+                                        child: Row(
+                                          children: [
+                                            Container(
+                                              width: 10, height: 10,
+                                              decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+                                            ),
+                                            const SizedBox(width: 12),
+                                            Expanded(
+                                              child: Text(
+                                                _capitalize(entry.key),
+                                                style: const TextStyle(
+                                                  fontFamily: 'Inter',
+                                                  fontSize: 15,
+                                                  fontWeight: FontWeight.w500,
+                                                  color: Color(0xFF334155),
+                                                ),
+                                              ),
+                                            ),
+                                            Text(
+                                              entry.value.toString(),
+                                              style: const TextStyle(
+                                                fontFamily: 'Inter',
+                                                fontSize: 16,
+                                                fontWeight: FontWeight.w700,
+                                                color: Color(0xFF0F172A),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      );
+                                    },
+                                  ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );
+  }
+
+  String _capitalize(String s) => s.isNotEmpty ? '${s[0].toUpperCase()}${s.substring(1)}' : '';
+
+  Color _getColorForIndex(int index) {
+    const colors = [
+      Color(0xFF3B82F6), // Blue
+      Color(0xFF10B981), // Emerald
+      Color(0xFFF59E0B), // Amber
+      Color(0xFF8B5CF6), // Violet
+      Color(0xFFEC4899), // Pink
+      Color(0xFF06B6D4), // Cyan
+    ];
+    return colors[index % colors.length];
   }
 }

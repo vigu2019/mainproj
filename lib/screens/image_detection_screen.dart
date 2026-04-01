@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:go_router/go_router.dart';
 import '../services/stats_service.dart';
+import '../services/database_service.dart';
 import 'package:http/http.dart' as http;
 
 class ImageUploadScreen extends StatefulWidget {
@@ -47,33 +48,97 @@ class _ImageUploadScreenState extends State<ImageUploadScreen> {
     if (!hasImage) return;
     setState(() => _loading = true);
 
-    final request = http.MultipartRequest(
-      'POST',
-      Uri.parse('http://127.0.0.1:8000/predict'),
-    );
-
-    request.fields['mode'] = _selectedModel.toLowerCase();
-
-    if (_imageBytes != null) {
-      request.files.add(
-        http.MultipartFile.fromBytes('file', _imageBytes!, filename: 'image.jpg'),
+    try {
+      final request = http.MultipartRequest(
+        'POST',
+        Uri.parse('http://127.0.0.1:8000/predict'),
       );
-    } else {
-      request.files.add(
-        await http.MultipartFile.fromPath('file', _selectedImage!.path),
-      );
+
+      request.fields['model_type'] = _selectedModel.toLowerCase();
+
+      if (_imageBytes != null) {
+        request.files.add(
+          http.MultipartFile.fromBytes('file', _imageBytes!, filename: 'image.jpg'),
+        );
+      } else {
+        request.files.add(
+          await http.MultipartFile.fromPath('file', _selectedImage!.path),
+        );
+      }
+
+      final response = await request.send();
+      final body = await response.stream.bytesToString();
+      final data = jsonDecode(body);
+
+      setState(() => _loading = false);
+      if (!mounted) return;
+
+      context.push('/result', extra: data);
+
+      // Persist in background (non-blocking)
+      try {
+        await StatsService.incrementScans();
+      } catch (_) {}
+
+      try {
+        await DatabaseService().insertScan({
+          'type': 'Image',
+          'model': _selectedModel,
+          'item_count': data['total'] ?? 0,
+          'timestamp': DateTime.now().toString(),
+          'status': 'Completed',
+        });
+      } catch (_) {}
+    } catch (e) {
+      setState(() => _loading = false);
     }
+  }
 
-    final response = await request.send();
-    final body = await response.stream.bytesToString();
-    final data = jsonDecode(body);
+  Future<void> _runCompare() async {
+    if (!hasImage) return;
+    setState(() => _loading = true);
 
-    setState(() => _loading = false);
-    
-    // Increment the dashboard scan history tracker
-    await StatsService.incrementScans();
+    try {
+      final request = http.MultipartRequest(
+        'POST',
+        Uri.parse('http://127.0.0.1:8000/compare'),
+      );
 
-    context.push('/result', extra: data);
+      if (_imageBytes != null) {
+        request.files.add(
+          http.MultipartFile.fromBytes('file', _imageBytes!, filename: 'image.jpg'),
+        );
+      } else {
+        request.files.add(
+          await http.MultipartFile.fromPath('file', _selectedImage!.path),
+        );
+      }
+
+      final response = await request.send();
+      final body = await response.stream.bytesToString();
+      final data = jsonDecode(body);
+
+      setState(() => _loading = false);
+      if (!mounted) return;
+
+      context.push('/compare-result', extra: data);
+
+      try {
+        await StatsService.incrementScans();
+      } catch (_) {}
+
+      try {
+        await DatabaseService().insertScan({
+          'type': 'Image',
+          'model': 'Compare',
+          'item_count': (data['enhanced_total'] ?? 0) as int,
+          'timestamp': DateTime.now().toString(),
+          'status': 'Completed',
+        });
+      } catch (_) {}
+    } catch (e) {
+      setState(() => _loading = false);
+    }
   }
 
   @override
@@ -296,42 +361,78 @@ class _ImageUploadScreenState extends State<ImageUploadScreen> {
                             const SizedBox(height: 24),
                           ],
 
-                          // Process Button
-                          GestureDetector(
-                            onTap: hasImage && !_loading ? _runAnalysis : null,
-                            child: AnimatedContainer(
-                              duration: const Duration(milliseconds: 200),
-                              width: double.infinity,
-                              height: 56,
-                              decoration: BoxDecoration(
-                                color: hasImage ? const Color(0xFF3B82F6) : const Color(0xFFF1F5F9), // Blue 500 / Slate 100
-                                borderRadius: BorderRadius.circular(12),
-                                border: hasImage ? null : Border.all(color: const Color(0xFFE2E8F0)),
-                                boxShadow: hasImage ? [
-                                  BoxShadow(
-                                    color: const Color(0xFF3B82F6).withOpacity(0.25),
-                                    blurRadius: 16,
-                                    offset: const Offset(0, 6),
-                                  )
-                                ] : null,
-                              ),
-                              child: Center(
-                                child: _loading
-                                    ? const SizedBox(
-                                        width: 20, height: 20,
-                                        child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
-                                      )
-                                    : Text(
-                                        'Process Imagery',
-                                        style: TextStyle(
-                                          fontFamily: 'Inter',
-                                          fontSize: 15,
-                                          fontWeight: FontWeight.w600,
-                                          color: hasImage ? Colors.white : const Color(0xFF94A3B8),
-                                        ),
+                          // Process Buttons
+                          Row(
+                            children: [
+                              Expanded(
+                                child: GestureDetector(
+                                  onTap: hasImage && !_loading ? _runCompare : null,
+                                  child: AnimatedContainer(
+                                    duration: const Duration(milliseconds: 200),
+                                    height: 56,
+                                    decoration: BoxDecoration(
+                                      color: hasImage ? Colors.white : const Color(0xFFF1F5F9),
+                                      borderRadius: BorderRadius.circular(12),
+                                      border: Border.all(
+                                        color: hasImage ? const Color(0xFF3B82F6) : const Color(0xFFE2E8F0),
+                                        width: 1.5,
                                       ),
+                                    ),
+                                    child: Center(
+                                      child: _loading
+                                          ? const SizedBox.shrink()
+                                          : Text(
+                                              'Compare Models',
+                                              style: TextStyle(
+                                                fontFamily: 'Inter',
+                                                fontSize: 15,
+                                                fontWeight: FontWeight.w600,
+                                                color: hasImage ? const Color(0xFF3B82F6) : const Color(0xFF94A3B8),
+                                              ),
+                                            ),
+                                    ),
+                                  ),
+                                ),
                               ),
-                            ),
+                              const SizedBox(width: 16),
+                              Expanded(
+                                child: GestureDetector(
+                                  onTap: hasImage && !_loading ? _runAnalysis : null,
+                                  child: AnimatedContainer(
+                                    duration: const Duration(milliseconds: 200),
+                                    height: 56,
+                                    decoration: BoxDecoration(
+                                      color: hasImage ? const Color(0xFF3B82F6) : const Color(0xFFF1F5F9), // Blue 500 / Slate 100
+                                      borderRadius: BorderRadius.circular(12),
+                                      border: hasImage ? null : Border.all(color: const Color(0xFFE2E8F0)),
+                                      boxShadow: hasImage ? [
+                                        BoxShadow(
+                                          color: const Color(0xFF3B82F6).withOpacity(0.25),
+                                          blurRadius: 16,
+                                          offset: const Offset(0, 6),
+                                        )
+                                      ] : null,
+                                    ),
+                                    child: Center(
+                                      child: _loading
+                                          ? const SizedBox(
+                                              width: 20, height: 20,
+                                              child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                                            )
+                                          : Text(
+                                              'Process Imagery',
+                                              style: TextStyle(
+                                                fontFamily: 'Inter',
+                                                fontSize: 15,
+                                                fontWeight: FontWeight.w600,
+                                                color: hasImage ? Colors.white : const Color(0xFF94A3B8),
+                                              ),
+                                            ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         ],
                       ),

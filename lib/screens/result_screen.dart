@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import '../utils/media_saver.dart';
+import '../utils/image_helper.dart';
 
 class ResultScreen extends StatelessWidget {
   const ResultScreen({super.key});
@@ -19,10 +20,10 @@ class ResultScreen extends StatelessWidget {
       );
     }
 
-    final String imageUrl = extra['image_url'];
-    final Map<String, dynamic> counts = extra['counts'] as Map<String, dynamic>;
+    final String imageUrl = extra['image_url'] ?? extra['image'] ?? extra['base64'] ?? extra['image_base64'] ?? extra['base64_image'] ?? '';
+    final Map<String, dynamic> counts = extra['counts'] != null ? Map<String, dynamic>.from(extra['counts']) : {};
 
-    final int total = counts.values.fold<int>(0, (sum, v) => sum + (v as int));
+    final int total = counts.values.fold<int>(0, (sum, v) => sum + ((v as num).toInt()));
 
     return Scaffold(
       backgroundColor: const Color(0xFFF1F5F9),
@@ -75,8 +76,6 @@ class ResultScreen extends StatelessWidget {
                     ),
                   ],
                 ),
-                
-                // Download Image Button
                 GestureDetector(
                   onTap: () => MediaSaver.downloadAndSaveImage(context, imageUrl),
                   child: Container(
@@ -134,15 +133,10 @@ class ResultScreen extends StatelessWidget {
                       ),
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(18),
-                        child: Image.network(
-                          imageUrl,
-                          fit: BoxFit.contain, // Maintain aspect ratio within large box
-                          loadingBuilder: (context, child, p) {
-                            if (p == null) return child;
-                            return const Center(
-                              child: CircularProgressIndicator(color: Color(0xFF3B82F6), strokeWidth: 2),
-                            );
-                          },
+                        child: InteractiveViewer(
+                          minScale: 0.5,
+                          maxScale: 5.0,
+                          child: ImageHelper.buildImage(imageUrl, fit: BoxFit.contain, loaderColor: const Color(0xFF3B82F6)),
                         ),
                       ),
                     ),
@@ -308,14 +302,7 @@ class ResultScreen extends StatelessWidget {
   String _capitalize(String s) => s.isNotEmpty ? '${s[0].toUpperCase()}${s.substring(1)}' : '';
 
   Color _getColorForIndex(int index) {
-    const colors = [
-      Color(0xFF3B82F6), // Blue
-      Color(0xFF10B981), // Emerald
-      Color(0xFFF59E0B), // Amber
-      Color(0xFF8B5CF6), // Violet
-      Color(0xFFEC4899), // Pink
-      Color(0xFF06B6D4), // Cyan
-    ];
+    const colors = [ Color(0xFF3B82F6), Color(0xFF10B981), Color(0xFFF59E0B), Color(0xFF8B5CF6), Color(0xFFEC4899), Color(0xFF06B6D4),];
     return colors[index % colors.length];
   }
 }

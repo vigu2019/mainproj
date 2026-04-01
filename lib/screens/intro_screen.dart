@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:http/http.dart' as http;
 import '../services/stats_service.dart';
+import '../services/database_service.dart';
 import 'package:intl/intl.dart';
 
 class IntroScreen extends StatefulWidget {
@@ -13,14 +14,16 @@ class IntroScreen extends StatefulWidget {
 }
 
 class _IntroScreenState extends State<IntroScreen> {
-  int _totalScans = 1248; // Initial value, will be updated dynamically
+  int _totalScans = 0;
   bool _isBackendOnline = false;
   Timer? _pollingTimer;
+  List<Map<String, dynamic>> _scanHistory = [];
 
   @override
   void initState() {
     super.initState();
     _loadStats();
+    _loadHistory();
     _checkBackendStatus();
     // Poll every 5 seconds
     _pollingTimer = Timer.periodic(const Duration(seconds: 5), (_) => _checkBackendStatus());
@@ -54,6 +57,15 @@ class _IntroScreenState extends State<IntroScreen> {
     if (mounted) {
       setState(() {
         _totalScans = scans;
+      });
+    }
+  }
+
+  Future<void> _loadHistory() async {
+    final rows = await DatabaseService().getScans(limit: 10);
+    if (mounted) {
+      setState(() {
+        _scanHistory = rows;
       });
     }
   }
@@ -191,7 +203,7 @@ class _IntroScreenState extends State<IntroScreen> {
             ),
             const SizedBox(height: 20),
 
-            // Mock History Table
+            // Live History Table
             Container(
               decoration: BoxDecoration(
                 color: Colors.white,
@@ -205,17 +217,39 @@ class _IntroScreenState extends State<IntroScreen> {
                   ),
                 ],
               ),
-              child: Column(
-                children: [
-                  _buildHistoryRow('drone_sector_7.mp4', 'Video', 'Completed', '2 hrs ago'),
-                  const Divider(height: 1, color: Color(0xFFF1F5F9)),
-                  _buildHistoryRow('sat_img_alpha_99.jpg', 'Image', 'Completed', '5 hrs ago'),
-                  const Divider(height: 1, color: Color(0xFFF1F5F9)),
-                  _buildHistoryRow('feed_beta_live.mov', 'Video', 'Failed', '1 day ago', isError: true),
-                  const Divider(height: 1, color: Color(0xFFF1F5F9)),
-                  _buildHistoryRow('campus_scan_01.png', 'Image', 'Completed', '2 days ago'),
-                ],
-              ),
+              child: _scanHistory.isEmpty
+                  ? const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 48),
+                      child: Center(
+                        child: Column(
+                          children: [
+                            Icon(Icons.history_rounded, size: 40, color: Color(0xFFCBD5E1)),
+                            SizedBox(height: 12),
+                            Text(
+                              'No scans yet. Run your first analysis!',
+                              style: TextStyle(
+                                fontFamily: 'Inter',
+                                fontSize: 14,
+                                color: Color(0xFF94A3B8),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    )
+                  : Column(
+                      children: List.generate(_scanHistory.length * 2 - 1, (i) {
+                        if (i.isOdd) return const Divider(height: 1, color: Color(0xFFF1F5F9));
+                        final row = _scanHistory[i ~/ 2];
+                        return _buildHistoryRow(
+                          row['type'] as String,
+                          row['model'] as String,
+                          row['item_count'] as int,
+                          row['timestamp'] as String,
+                          row['status'] as String,
+                        );
+                      }),
+                    ),
             ),
           ],
         ),
@@ -361,7 +395,8 @@ class _IntroScreenState extends State<IntroScreen> {
     );
   }
 
-  Widget _buildHistoryRow(String title, String type, String status, String time, {bool isError = false}) {
+  Widget _buildHistoryRow(String type, String model, int count, String timestamp, String status) {
+    final isError = status == 'Failed';
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
       child: Row(
@@ -381,7 +416,7 @@ class _IntroScreenState extends State<IntroScreen> {
           const SizedBox(width: 16),
           Expanded(
             child: Text(
-              title,
+              '$type · $model model',
               style: const TextStyle(
                 fontFamily: 'Inter',
                 fontSize: 14,
@@ -393,7 +428,7 @@ class _IntroScreenState extends State<IntroScreen> {
           SizedBox(
             width: 100,
             child: Text(
-              type,
+              '$count objects',
               style: const TextStyle(
                 fontFamily: 'Inter',
                 fontSize: 14,
@@ -426,15 +461,16 @@ class _IntroScreenState extends State<IntroScreen> {
             ),
           ),
           SizedBox(
-            width: 100,
+            width: 140,
             child: Text(
-              time,
+              timestamp,
               textAlign: TextAlign.right,
               style: const TextStyle(
                 fontFamily: 'Inter',
                 fontSize: 13,
                 color: Color(0xFF94A3B8),
               ),
+              overflow: TextOverflow.ellipsis,
             ),
           ),
         ],

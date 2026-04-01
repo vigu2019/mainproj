@@ -1,13 +1,25 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import '../services/profile_service.dart';
 
-class DashboardLayout extends StatelessWidget {
+class DashboardLayout extends StatefulWidget {
   final Widget child;
   
   const DashboardLayout({
     super.key,
     required this.child,
   });
+
+  @override
+  State<DashboardLayout> createState() => _DashboardLayoutState();
+}
+
+class _DashboardLayoutState extends State<DashboardLayout> {
+  @override
+  void initState() {
+    super.initState();
+    ProfileService.init();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -90,10 +102,11 @@ class DashboardLayout extends StatelessWidget {
                   onTap: () => context.go('/video'),
                 ),
 
+                // Removed Reports and Recent Detections section
                 const Padding(
                   padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                   child: Text(
-                    'REPORTS',
+                    'ADMIN',
                     style: TextStyle(
                       fontFamily: 'Inter',
                       fontSize: 11,
@@ -105,61 +118,73 @@ class DashboardLayout extends StatelessWidget {
                 ),
 
                 _SidebarItem(
-                  icon: Icons.history_rounded,
-                  label: 'Recent Detections',
-                  isActive: false,
-                  onTap: () {
-                    // Mock feature
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Recent Detections module coming soon.')),
-                    );
-                  },
+                  icon: Icons.admin_panel_settings_rounded,
+                  label: 'Admin Panel',
+                  isActive: location == '/admin',
+                  onTap: () => context.go('/admin'),
                 ),
                 
                 const Spacer(),
 
                 // User / Settings Footer
-                Container(
-                  padding: const EdgeInsets.all(24),
-                  decoration: BoxDecoration(
-                    border: Border(top: BorderSide(color: const Color(0xFFE2E8F0))), // Slate 200
+                InkWell(
+                  onTap: () => context.go('/admin'),
+                  borderRadius: const BorderRadius.only(
+                    bottomLeft: Radius.circular(0),
+                    bottomRight: Radius.circular(0),
                   ),
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 36, height: 36,
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFE2E8F0),
-                          borderRadius: BorderRadius.circular(18),
-                        ),
-                        child: const Icon(Icons.person_rounded, color: Color(0xFF64748B), size: 18),
-                      ),
-                      const SizedBox(width: 12),
-                      const Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Admin User',
-                              style: TextStyle(
-                                fontFamily: 'Inter',
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600,
-                                color: Color(0xFF334155),
-                              ),
+                  child: Container(
+                    padding: const EdgeInsets.all(24),
+                    decoration: const BoxDecoration(
+                      border: Border(top: BorderSide(color: Color(0xFFE2E8F0))),
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 36, height: 36,
+                          decoration: BoxDecoration(
+                            gradient: const LinearGradient(
+                              colors: [Color(0xFF3B82F6), Color(0xFF1D4ED8)],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
                             ),
-                            Text(
-                              'admin@so-yolo.local',
-                              style: TextStyle(
-                                fontFamily: 'Inter',
-                                fontSize: 11,
-                                color: Color(0xFF94A3B8),
-                              ),
-                            ),
-                          ],
+                            borderRadius: BorderRadius.circular(18),
+                          ),
+                          child: const Icon(Icons.person_rounded, color: Colors.white, size: 18),
                         ),
-                      ),
-                    ],
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: ValueListenableBuilder<Map<String, String>>(
+                            valueListenable: ProfileService.profileNotifier,
+                            builder: (context, profile, child) {
+                              return Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    profile['name']!,
+                                    style: const TextStyle(
+                                      fontFamily: 'Inter',
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w600,
+                                      color: Color(0xFF334155),
+                                    ),
+                                  ),
+                                  Text(
+                                    profile['email']!,
+                                    style: const TextStyle(
+                                      fontFamily: 'Inter',
+                                      fontSize: 11,
+                                      color: Color(0xFF94A3B8),
+                                    ),
+                                  ),
+                                ],
+                              );
+                            },
+                          ),
+                        ),
+                        const Icon(Icons.chevron_right_rounded, size: 18, color: Color(0xFF94A3B8)),
+                      ],
+                    ),
                   ),
                 ),
               ],
@@ -169,7 +194,7 @@ class DashboardLayout extends StatelessWidget {
           // Main Content Area
           Expanded(
             child: ClipRRect(
-              child: child,
+              child: widget.child,
             ),
           ),
         ],

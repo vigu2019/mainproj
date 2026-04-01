@@ -6,6 +6,8 @@ import 'screens/image_detection_screen.dart';
 import 'screens/video_detection_screen.dart';
 import 'screens/result_screen.dart';
 import 'screens/video_result_screen.dart';
+import 'screens/compare_result_screen.dart';
+import 'screens/admin_screen.dart';
 import 'widgets/dashboard_layout.dart';
 
 final rootNavigatorKey = GlobalKey<NavigatorState>();
@@ -54,6 +56,16 @@ final GoRouter appRouter = GoRouter(
             final events = extra['events'] as List<dynamic>? ?? [];
             return VideoResultScreen(videoUrl: videoUrl, events: events);
           },
+        ),
+        GoRoute(
+          path: '/compare-result',
+          parentNavigatorKey: shellNavigatorKey,
+          builder: (context, state) => const CompareResultScreen(),
+        ),
+        GoRoute(
+          path: '/admin',
+          parentNavigatorKey: shellNavigatorKey,
+          builder: (context, state) => const AdminScreen(),
         ),
       ],
     ),

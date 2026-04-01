@@ -5,7 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:go_router/go_router.dart';
 import '../services/stats_service.dart';
-import 'package:http/http.dart' as http;
+import '../services/database_service.dart';
+import 'package:dio/dio.dart';
 
 class VideoDetectionScreen extends StatefulWidget {
   const VideoDetectionScreen({super.key});
@@ -20,6 +21,7 @@ class _VideoDetectionScreenState extends State<VideoDetectionScreen> {
 
   String _selectedModel = 'Enhanced';
   bool _loading = false;
+  double _uploadProgress = 0.0;
 
   bool get hasVideo => _selectedVideo != null || _videoBytes != null;
 
@@ -46,34 +48,74 @@ class _VideoDetectionScreenState extends State<VideoDetectionScreen> {
   }
 
   Future<void> _runVideoAnalysis() async {
-    setState(() => _loading = true);
+    setState(() {
+      _loading = true;
+      _uploadProgress = 0.0;
+    });
 
-    final uri = Uri.parse('http://127.0.0.1:8000/predict/video');
-    final request = http.MultipartRequest('POST', uri);
+    try {
+      final dio = Dio();
+      final formData = FormData.fromMap({
+        'model_type': _selectedModel.toLowerCase(),
+      });
 
-    request.fields['model_type'] = _selectedModel.toLowerCase();
+      if (_videoBytes != null) {
+        formData.files.add(
+          MapEntry(
+            'file',
+            MultipartFile.fromBytes(_videoBytes!, filename: 'video.mp4'),
+          ),
+        );
+      } else if (_selectedVideo != null) {
+        formData.files.add(
+          MapEntry(
+            'file',
+            await MultipartFile.fromFile(_selectedVideo!.path, filename: 'video.mp4'),
+          ),
+        );
+      }
 
-    if (_videoBytes != null) {
-      request.files.add(
-        http.MultipartFile.fromBytes('file', _videoBytes!, filename: 'video.mp4'),
+      final response = await dio.post(
+        'http://127.0.0.1:8000/predict/video',
+        data: formData,
+        onSendProgress: (int sent, int total) {
+          if (total != -1) {
+            setState(() {
+              _uploadProgress = sent / total;
+            });
+          }
+        },
       );
-    } else if (_selectedVideo != null) {
-      request.files.add(
-        await http.MultipartFile.fromPath('file', _selectedVideo!.path),
-      );
+
+      setState(() {
+        _loading = false;
+        _uploadProgress = 0.0;
+      });
+
+      if (!mounted) return;
+
+      // Navigate immediately — do NOT block on DB
+      context.push('/video-result', extra: response.data);
+      try {
+        await StatsService.incrementScans();
+      } catch (_) {}
+
+      try {
+        final events = (response.data['events'] as List<dynamic>?) ?? [];
+        await DatabaseService().insertScan({
+          'type': 'Video',
+          'model': _selectedModel,
+          'item_count': events.length,
+          'timestamp': DateTime.now().toString(),
+          'status': 'Completed',
+        });
+      } catch (_) {}
+    } catch (e) {
+      setState(() {
+        _loading = false;
+        _uploadProgress = 0.0;
+      });
     }
-
-    final response = await request.send();
-    final responseBody = await response.stream.bytesToString();
-    final result = jsonDecode(responseBody);
-
-    setState(() => _loading = false);
-    if (!mounted) return;
-    
-    // Increment the dashboard scan history tracker
-    await StatsService.incrementScans();
-
-    context.push('/video-result', extra: result);
   }
 
   @override
@@ -321,6 +363,7 @@ class _VideoDetectionScreenState extends State<VideoDetectionScreen> {
                               duration: const Duration(milliseconds: 200),
                               width: double.infinity,
                               height: 56,
+                              clipBehavior: Clip.hardEdge,
                               decoration: BoxDecoration(
                                 color: hasVideo ? const Color(0xFF06B6D4) : const Color(0xFFF1F5F9), // Cyan 500 / Slate 100
                                 borderRadius: BorderRadius.circular(12),
@@ -333,21 +376,50 @@ class _VideoDetectionScreenState extends State<VideoDetectionScreen> {
                                   )
                                 ] : null,
                               ),
-                              child: Center(
-                                child: _loading
-                                    ? const SizedBox(
-                                        width: 20, height: 20,
-                                        child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
-                                      )
-                                    : Text(
-                                        'Process Stream',
-                                        style: TextStyle(
-                                          fontFamily: 'Inter',
-                                          fontSize: 15,
-                                          fontWeight: FontWeight.w600,
-                                          color: hasVideo ? Colors.white : const Color(0xFF94A3B8),
+                              child: Stack(
+                                children: [
+                                  if (_loading)
+                                    Positioned.fill(
+                                      child: Align(
+                                        alignment: Alignment.centerLeft,
+                                        child: FractionallySizedBox(
+                                          widthFactor: _uploadProgress,
+                                          child: Container(color: Colors.white.withOpacity(0.2)),
                                         ),
                                       ),
+                                    ),
+                                  Center(
+                                    child: _loading
+                                        ? Row(
+                                            mainAxisAlignment: MainAxisAlignment.center,
+                                            children: [
+                                              const SizedBox(
+                                                width: 16, height: 16,
+                                                child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                                              ),
+                                              const SizedBox(width: 12),
+                                              Text(
+                                                'Uploading... ${(_uploadProgress * 100).toInt()}%',
+                                                style: const TextStyle(
+                                                  fontFamily: 'Inter',
+                                                  fontSize: 15,
+                                                  fontWeight: FontWeight.w600,
+                                                  color: Colors.white,
+                                                ),
+                                              ),
+                                            ],
+                                          )
+                                        : Text(
+                                            'Process Stream',
+                                            style: TextStyle(
+                                              fontFamily: 'Inter',
+                                              fontSize: 15,
+                                              fontWeight: FontWeight.w600,
+                                              color: hasVideo ? Colors.white : const Color(0xFF94A3B8),
+                                            ),
+                                          ),
+                                  ),
+                                ],
                               ),
                             ),
                           ),
